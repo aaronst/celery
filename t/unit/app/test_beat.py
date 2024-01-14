@@ -1,6 +1,6 @@
 import errno
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pickle import dumps, loads
 from unittest.mock import Mock, call, patch
 
@@ -156,7 +156,10 @@ class mSchedulerRuntimeError(mScheduler):
 
 class mocked_schedule(schedule):
 
-    def __init__(self, is_due, next_run_at, nowfun=datetime.utcnow):
+    def now_func():
+        return datetime.now(timezone.utc)
+
+    def __init__(self, is_due, next_run_at, nowfun=now_func):
         self._is_due = is_due
         self._next_run_at = next_run_at
         self.run_every = timedelta(seconds=1)
@@ -863,17 +866,17 @@ class test_schedule:
     def test_maybe_make_aware(self):
         x = schedule(10, app=self.app)
         x.utc_enabled = True
-        d = x.maybe_make_aware(datetime.utcnow())
+        d = x.maybe_make_aware(datetime.now(timezone.utc))
         assert d.tzinfo
         x.utc_enabled = False
-        d2 = x.maybe_make_aware(datetime.utcnow())
+        d2 = x.maybe_make_aware(datetime.now(timezone.utc))
         assert d2.tzinfo
 
     def test_to_local(self):
         x = schedule(10, app=self.app)
         x.utc_enabled = True
-        d = x.to_local(datetime.utcnow())
+        d = x.to_local(datetime.now())
         assert d.tzinfo is None
         x.utc_enabled = False
-        d = x.to_local(datetime.utcnow())
+        d = x.to_local(datetime.now(timezone.utc))
         assert d.tzinfo
